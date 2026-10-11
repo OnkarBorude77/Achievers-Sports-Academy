@@ -3,6 +3,7 @@ import { Routes, Route, Link, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
+import Motion from "./components/Motion.jsx";
 import { OwnerProvider } from "./components/OwnerContext.jsx";
 import OwnerTools from "./components/OwnerTools.jsx";
 import { useSite } from "./components/SettingsContext.jsx";
@@ -11,14 +12,6 @@ import About from "./pages/About.jsx";
 import Achievements from "./pages/Achievements.jsx";
 import Gallery from "./pages/Gallery.jsx";
 import Contact from "./pages/Contact.jsx";
-
-const PAGE_TITLES = {
-  "/": { title: "Karate Classes for Kids, Teens and Adults", desc: "Join professional karate training. Build discipline, fitness and confidence." },
-  "/about": { title: "About Us", desc: "Meet our instructors and learn the story behind our karate academy." },
-  "/achievements": { title: "Achievements", desc: "Medals, belts and tournament results from our karate students." },
-  "/gallery": { title: "Gallery", desc: "Photos from our karate classes, gradings and tournaments." },
-  "/contact": { title: "Contact and Admissions", desc: "Contact us for admissions, class timings and fees." },
-};
 
 function NotFound() {
   return (
@@ -35,24 +28,9 @@ function NotFound() {
 export default function App() {
   const site = useSite();
   const { pathname } = useLocation();
-
   useEffect(() => {
-    const key = pathname.replace(/\/+$/, "") || "/";
-    const page = PAGE_TITLES[key];
-    document.title = page
-      ? `${site.name} | ${page.title}`
-      : `${site.name} | Karate Classes`;
-
-    if (page) {
-      let meta = document.querySelector('meta[name="description"]');
-      if (!meta) {
-        meta = document.createElement("meta");
-        meta.setAttribute("name", "description");
-        document.head.appendChild(meta);
-      }
-      meta.setAttribute("content", `${site.name}: ${page.desc}`);
-    }
-  }, [site.name, pathname]);
+    document.title = `${site.name} | Karate Classes`;
+  }, [site.name]);
 
   return (
     <OwnerProvider>
@@ -64,8 +42,10 @@ export default function App() {
         Skip to content
       </button>
       <ScrollToTop />
+      <Motion />
       <Navbar />
       <main id="main" tabIndex={-1}>
+        <div className="page-enter" key={pathname}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
@@ -74,6 +54,7 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </div>
       </main>
       <Footer />
       <OwnerTools />

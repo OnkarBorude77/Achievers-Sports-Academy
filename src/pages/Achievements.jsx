@@ -82,11 +82,10 @@ export default function Achievements() {
                         </div>
                       )}
                       <div>
+                        <span className={`level-badge level-${a.level.toLowerCase()}`}>{a.level}</span>
                         <h3>{a.result}</h3>
                         <p className="result-meta">{a.title}</p>
-                        <p>
-                          {a.level} level.{a.who ? ` ${a.who}.` : ""}
-                        </p>
+                        {a.who && <p>{a.who}</p>}
                         {isOwner && a.added && (
                           <button type="button" className="remove-btn" onClick={() => handleRemove(a.id)}>
                             Delete

@@ -3,6 +3,8 @@ import PageHeader from "../components/PageHeader.jsx";
 import { useSite } from "../components/SettingsContext.jsx";
 import { dojoKun } from "../data/siteData.js";
 
+const NUMERALS = ["一", "二", "三", "四", "五"];
+
 const paragraphs = (text) => text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 
 export default function About() {
@@ -71,8 +73,11 @@ export default function About() {
             </p>
           </div>
           <ol className="kun-list">
-            {dojoKun.map((line) => (
-              <li key={line}>{line}</li>
+            {dojoKun.map((line, i) => (
+              <li key={line}>
+                <span className="kun-num" aria-hidden="true" lang="ja">{NUMERALS[i] ?? i + 1}</span>
+                <span>{line}</span>
+              </li>
             ))}
           </ol>
         </div>

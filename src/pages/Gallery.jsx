@@ -99,6 +99,7 @@ export default function Gallery() {
                 >
                   <Photo file={g.file} alt={g.alt} />
                 </button>
+                <span className="tile-caption" aria-hidden="true">{g.alt}</span>
                 {isOwner && g.added && (
                   <button type="button" className="tile-remove" onClick={() => handleRemove(g.id)}>
                     Delete
