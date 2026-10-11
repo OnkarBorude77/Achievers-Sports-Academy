@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://achievers-sports-academy.pages.dev/sitemap.xml
