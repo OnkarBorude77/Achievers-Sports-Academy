@@ -14,14 +14,19 @@ export default function Gallery() {
   const [adding, setAdding] = useState(false);
   const closeRef = useRef(null);
   const { isOwner } = useOwner();
-  const { items, add, remove } = useGallery();
+  const { items, loading, add, remove } = useGallery();
 
   const closeForm = useCallback(() => setAdding(false), []);
-  const handleAdd = (newItems) => {
-    const saved = add(newItems);
-    if (saved) setCategory("All");
-    return saved;
+  const handleAdd = async (meta, files) => {
+    const result = await add(meta, files);
+    if (result.ok) setCategory("All");
+    return result;
   };
+  async function handleRemove(id) {
+    if (!window.confirm("Delete this photo?")) return;
+    const result = await remove(id);
+    if (!result.ok) window.alert(result.error);
+  }
 
   const shown = items.filter((g) => category === "All" || g.category === category);
   const isOpen = open !== null;
@@ -55,26 +60,28 @@ export default function Gallery() {
       <section className="section">
         <div className="container">
           <div className="toolbar">
-          <div className="chips" role="group" aria-label="Filter by category">
-            {galleryCategories.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className="chip"
-                aria-pressed={category === c}
-                onClick={() => {
-                  setCategory(c);
-                  setOpen(null);
-                }}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-          {isOwner && <AddButton label="Add photos" onClick={() => setAdding(true)} />}
+            <div className="chips" role="group" aria-label="Filter by category">
+              {galleryCategories.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className="chip"
+                  aria-pressed={category === c}
+                  onClick={() => {
+                    setCategory(c);
+                    setOpen(null);
+                  }}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+            {isOwner && <AddButton label="Add photos" onClick={() => setAdding(true)} />}
           </div>
 
-          {shown.length === 0 && (
+          {loading && shown.length === 0 && <p className="note">Loading…</p>}
+
+          {!loading && shown.length === 0 && (
             <div className="empty-state">
               <p>{items.length === 0 ? "No photos have been added yet." : "No photos in this category yet."}</p>
               {isOwner && items.length === 0 && <p>Use the Add photos button to upload the first ones.</p>}
@@ -93,11 +100,7 @@ export default function Gallery() {
                   <Photo file={g.file} alt={g.alt} />
                 </button>
                 {isOwner && g.added && (
-                  <button
-                    type="button"
-                    className="tile-remove"
-                    onClick={() => window.confirm("Delete this photo?") && remove(g.id)}
-                  >
+                  <button type="button" className="tile-remove" onClick={() => handleRemove(g.id)}>
                     Delete
                   </button>
                 )}
@@ -126,7 +129,7 @@ export default function Gallery() {
             Previous
           </button>
           <figure className="lb-figure">
-            <Photo key={current.id ?? current.file} file={current.file} alt={current.alt} />
+            <Photo key={current.id ?? current.file} file={current.full ?? current.file} alt={current.alt} />
             <figcaption>{current.alt}</figcaption>
           </figure>
           <button

@@ -11,6 +11,11 @@ export default function Contact() {
   const site = useSite();
   const { isOwner } = useOwner();
   const { items: branches, add: addBranch, update: updateBranch, remove: removeBranch } = useBranches();
+  async function handleRemoveBranch(id) {
+    if (!window.confirm("Delete this branch?")) return;
+    const result = await removeBranch(id);
+    if (!result.ok) window.alert(result.error);
+  }
   const [editing, setEditing] = useState(null); // null, "new", or the branch being edited
   const closeBranch = useCallback(() => setEditing(null), []);
   const [form, setForm] = useState({ name: "", phone: "", email: "", message: "" });
@@ -160,7 +165,7 @@ export default function Contact() {
                         <button
                           type="button"
                           className="remove-btn"
-                          onClick={() => window.confirm("Delete this branch?") && removeBranch(b.id)}
+                          onClick={() => handleRemoveBranch(b.id)}
                         >
                           Delete
                         </button>

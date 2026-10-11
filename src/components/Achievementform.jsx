@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { processImage } from "../data/images.js";
 import { achievementLevels } from "../data/siteData.js";
 
 const levels = achievementLevels.filter((l) => l !== "All");
 
-// Shown inside the pop-up. onAdd(items) returns false if browser storage is full.
+// Shown inside the pop-up. onAdd(data, photoFile) returns { ok } or { ok: false, error }.
 export default function AchievementForm({ onAdd, onClose }) {
   const [form, setForm] = useState({
     title: "",
@@ -39,26 +38,19 @@ export default function AchievementForm({ onAdd, onClose }) {
     }
     setBusy(true);
     setError("");
-    try {
-      const { dataUrl } = await processImage(file, 1000);
-      const saved = onAdd([
-        {
-          id: `added-${Date.now()}`,
-          year: Number(form.year),
-          level: form.level,
-          title: form.title.trim(),
-          result: form.result.trim(),
-          who: form.who.trim(),
-          photo: dataUrl,
-        },
-      ]);
-      if (saved) onClose();
-      else setError("Browser storage is full. Delete an older item or use a smaller photo.");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
+    const result = await onAdd(
+      {
+        year: Number(form.year),
+        level: form.level,
+        title: form.title.trim(),
+        result: form.result.trim(),
+        who: form.who.trim(),
+      },
+      file
+    );
+    setBusy(false);
+    if (result.ok) onClose();
+    else setError(result.error);
   }
 
   return (
@@ -96,9 +88,9 @@ export default function AchievementForm({ onAdd, onClose }) {
         <p className="form-status error" role="alert">{error}</p>
         <div className="modal-actions">
           <button className="btn btn-primary" type="submit" disabled={busy}>
-            {busy ? "Adding…" : "Add achievement"}
+            {busy ? "Saving…" : "Add achievement"}
           </button>
-          <button className="btn btn-ghost" type="button" onClick={onClose}>Cancel</button>
+          <button className="btn btn-ghost" type="button" onClick={onClose} disabled={busy}>Cancel</button>
         </div>
       </div>
     </form>

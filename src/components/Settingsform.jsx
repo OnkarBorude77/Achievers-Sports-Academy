@@ -57,13 +57,14 @@ export default function SettingsForm({ onClose }) {
   });
   const [pics, setPics] = useState(photos);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
   const set = (key) => (value) => setF((prev) => ({ ...prev, [key]: value }));
 
   async function choosePhoto(slotFile, chosen) {
     if (!chosen) return;
     try {
-      const { dataUrl } = await processImage(chosen, 1400, 0.8);
+      const { dataUrl } = await processImage(chosen, 1600, 0.82);
       setPics((prev) => ({ ...prev, [slotFile]: dataUrl }));
       setError("");
     } catch (err) {
@@ -98,22 +99,28 @@ export default function SettingsForm({ onClose }) {
     });
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     const fields = {
       ...f,
       address: toLines(f.address),
       senseiCredentials: toLines(f.senseiCredentials),
     };
-    if (save({ fields, photos: pics })) onClose();
-    else setError("Browser storage is full. Use smaller photos, or reset some photos to their originals.");
+    setBusy(true);
+    setError("");
+    const result = await save({ fields, photos: pics });
+    setBusy(false);
+    if (result.ok) onClose();
+    else setError(result.error);
   }
 
-  function handleReset() {
-    if (window.confirm("Reset all site details and replaced photos back to the originals?")) {
-      reset();
-      onClose();
-    }
+  async function handleReset() {
+    if (!window.confirm("Reset all site details and replaced photos back to the originals?")) return;
+    setBusy(true);
+    const result = await reset();
+    setBusy(false);
+    if (result.ok) onClose();
+    else setError(result.error);
   }
 
   return (
@@ -214,11 +221,10 @@ export default function SettingsForm({ onClose }) {
       <div className="full sticky-actions">
         <p className="form-status error" role="alert">{error}</p>
         <div className="modal-actions">
-          <button className="btn btn-primary" type="submit">Save changes</button>
-          <button className="btn btn-ghost" type="button" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "Saving…" : "Save changes"}</button>
+          <button className="btn btn-ghost" type="button" onClick={onClose} disabled={busy}>Cancel</button>
         </div>
       </div>
     </form>
   );
 }
-

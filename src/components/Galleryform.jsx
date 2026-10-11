@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { processImage } from "../data/images.js";
 import { galleryCategories } from "../data/siteData.js";
 
 const categories = galleryCategories.filter((c) => c !== "All");
 
-// Shown inside the pop-up. onAdd(items) returns false if browser storage is full.
+// Shown inside the pop-up. onAdd({ alt, category }, files) returns { ok } or { ok: false, error }.
 export default function GalleryForm({ onAdd, onClose }) {
   const [files, setFiles] = useState([]);
   const [caption, setCaption] = useState("");
@@ -20,25 +19,10 @@ export default function GalleryForm({ onAdd, onClose }) {
     }
     setBusy(true);
     setError("");
-    try {
-      const processed = await Promise.all(files.map((f) => processImage(f, 1200)));
-      const stamp = Date.now();
-      const saved = onAdd(
-        processed.map((p, i) => ({
-          id: `added-${stamp}-${i}`,
-          file: p.dataUrl,
-          alt: caption.trim() || "Dojo photo",
-          category,
-          ratio: p.ratio,
-        }))
-      );
-      if (saved) onClose();
-      else setError("Browser storage is full. Delete some photos or add fewer at a time.");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
+    const result = await onAdd({ alt: caption.trim() || "Dojo photo", category }, files);
+    setBusy(false);
+    if (result.ok) onClose();
+    else setError(result.error);
   }
 
   return (
@@ -71,13 +55,11 @@ export default function GalleryForm({ onAdd, onClose }) {
         <p className="form-status error" role="alert">{error}</p>
         <div className="modal-actions">
           <button className="btn btn-primary" type="submit" disabled={busy}>
-            {busy ? "Adding…" : "Add to gallery"}
+            {busy ? "Uploading…" : "Add to gallery"}
           </button>
-          <button className="btn btn-ghost" type="button" onClick={onClose}>Cancel</button>
+          <button className="btn btn-ghost" type="button" onClick={onClose} disabled={busy}>Cancel</button>
         </div>
       </div>
     </form>
   );
 }
-
-

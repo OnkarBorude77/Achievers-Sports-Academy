@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-// Shown inside the pop-up. onSave(branch) returns false if browser storage is full.
+// Shown inside the pop-up. onSave(branch) returns { ok } or { ok: false, error }.
 export default function BranchForm({ initial, onSave, onClose }) {
   const [f, setF] = useState({
     name: initial?.name ?? "",
@@ -9,21 +9,25 @@ export default function BranchForm({ initial, onSave, onClose }) {
     phone: initial?.phone ?? "",
     email: initial?.email ?? "",
   });
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const set = (key) => (e) => setF({ ...f, [key]: e.target.value });
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    const saved = onSave({
-      id: initial?.id ?? `branch-${Date.now()}`,
+    setBusy(true);
+    setError("");
+    const result = await onSave({
+      id: initial?.id,
       name: f.name.trim(),
       sensei: f.sensei.trim(),
       address: f.address.trim(),
       phone: f.phone.trim(),
       email: f.email.trim(),
     });
-    if (saved) onClose();
-    else setError("Browser storage is full. Delete something you no longer need and try again.");
+    setBusy(false);
+    if (result.ok) onClose();
+    else setError(result.error);
   }
 
   return (
@@ -51,8 +55,10 @@ export default function BranchForm({ initial, onSave, onClose }) {
       <div className="full">
         <p className="form-status error" role="alert">{error}</p>
         <div className="modal-actions">
-          <button className="btn btn-primary" type="submit">{initial ? "Save branch" : "Add branch"}</button>
-          <button className="btn btn-ghost" type="button" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" type="submit" disabled={busy}>
+            {busy ? "Saving…" : initial ? "Save branch" : "Add branch"}
+          </button>
+          <button className="btn btn-ghost" type="button" onClick={onClose} disabled={busy}>Cancel</button>
         </div>
       </div>
     </form>

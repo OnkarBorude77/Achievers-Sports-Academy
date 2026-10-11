@@ -1,42 +1,36 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { site } from "../data/siteData.js";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { supabase } from "../data/supabase.js";
 
-const OwnerContext = createContext({ isOwner: false, login: () => false, logout: () => {} });
+const OwnerContext = createContext({
+  isOwner: false,
+  login: async () => ({ ok: false }),
+  logout: async () => {},
+});
 
-// Owner mode shows the "add" forms. This passcode check only hides the forms from casual
-// visitors. It is not real security (see README note in siteData.js).
+// Owner mode = being signed in with the owner account created in Supabase.
+// Even if someone opens the add forms by tricking the page, the database refuses their changes.
 export function OwnerProvider({ children }) {
-  const [isOwner, setIsOwner] = useState(() => {
-    try {
-      return localStorage.getItem("dojo_owner") === "1";
-    } catch {
-      return false;
-    }
-  });
+  const [session, setSession] = useState(null);
 
-  const login = useCallback((passcode) => {
-    if (passcode !== site.ownerPasscode) return false;
-    try {
-      localStorage.setItem("dojo_owner", "1");
-    } catch {
-      /* ignore */
-    }
-    setIsOwner(true);
-    return true;
+  useEffect(() => {
+    if (!supabase) return undefined;
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
+    return () => data.subscription.unsubscribe();
   }, []);
 
-  const logout = useCallback(() => {
-    try {
-      localStorage.removeItem("dojo_owner");
-    } catch {
-      /* ignore */
-    }
-    setIsOwner(false);
+  const login = useCallback(async (email, password) => {
+    if (!supabase) return { ok: false, error: "The database is not connected yet." };
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return error ? { ok: false, error: "Email or password is not correct." } : { ok: true };
   }, []);
 
-  const value = useMemo(() => ({ isOwner, login, logout }), [isOwner, login, logout]);
+  const logout = useCallback(async () => {
+    await supabase?.auth.signOut();
+  }, []);
+
+  const value = useMemo(() => ({ isOwner: Boolean(session), login, logout }), [session, login, logout]);
   return <OwnerContext.Provider value={value}>{children}</OwnerContext.Provider>;
 }
 
 export const useOwner = () => useContext(OwnerContext);
-

@@ -31,3 +31,9 @@ export function processImage(file, maxSize = 1200, quality = 0.82, mime = "image
     reader.readAsDataURL(file);
   });
 }
+
+// Turns a data URL (from processImage) into a file-like Blob that can be uploaded.
+export async function dataUrlToBlob(dataUrl) {
+  const res = await fetch(dataUrl);
+  return res.blob();
+}

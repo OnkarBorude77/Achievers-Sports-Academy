@@ -8,17 +8,23 @@ export default function Footer() {
   const site = useSite();
   const { isOwner, login, logout } = useOwner();
   const [showLogin, setShowLogin] = useState(false);
-  const [passcode, setPasscode] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault();
-    if (login(passcode)) {
+    setBusy(true);
+    setError("");
+    const result = await login(email.trim(), password);
+    setBusy(false);
+    if (result.ok) {
       setShowLogin(false);
-      setPasscode("");
-      setError("");
+      setEmail("");
+      setPassword("");
     } else {
-      setError("That passcode is not correct.");
+      setError(result.error);
     }
   }
 
@@ -81,16 +87,30 @@ export default function Footer() {
             </>
           ) : showLogin ? (
             <form className="owner-login" onSubmit={handleLogin}>
-              <label htmlFor="owner-pass" className="sr-only">Owner passcode</label>
+              <label htmlFor="owner-email" className="sr-only">Owner email</label>
+              <input
+                id="owner-email"
+                type="email"
+                placeholder="Owner email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                required
+              />
+              <label htmlFor="owner-pass" className="sr-only">Password</label>
               <input
                 id="owner-pass"
                 type="password"
-                placeholder="Owner passcode"
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
+                required
               />
-              <button type="submit" className="btn btn-light">Unlock</button>
+              <button type="submit" className="btn btn-light" disabled={busy}>
+                {busy ? "Checking…" : "Log in"}
+              </button>
+              <button type="button" className="link-btn" onClick={() => setShowLogin(false)}>Cancel</button>
               <span role="alert">{error}</span>
             </form>
           ) : (

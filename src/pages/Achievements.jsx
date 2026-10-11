@@ -12,14 +12,19 @@ export default function Achievements() {
   const [level, setLevel] = useState("All");
   const [adding, setAdding] = useState(false);
   const { isOwner } = useOwner();
-  const { items, add, remove } = useAchievements();
+  const { items, loading, add, remove } = useAchievements();
 
   const closeForm = useCallback(() => setAdding(false), []);
-  const handleAdd = (newItems) => {
-    const saved = add(newItems);
-    if (saved) setLevel("All");
-    return saved;
+  const handleAdd = async (data, file) => {
+    const result = await add(data, file);
+    if (result.ok) setLevel("All");
+    return result;
   };
+  async function handleRemove(id) {
+    if (!window.confirm("Delete this achievement?")) return;
+    const result = await remove(id);
+    if (!result.ok) window.alert(result.error);
+  }
 
   const shown = items.filter((a) => level === "All" || a.level === level);
   const years = [...new Set(shown.map((a) => a.year))].sort((a, b) => b - a);
@@ -50,7 +55,9 @@ export default function Achievements() {
             {isOwner && <AddButton label="Add achievement" onClick={() => setAdding(true)} />}
           </div>
 
-          {shown.length === 0 && (
+          {loading && shown.length === 0 && <p className="note">Loading…</p>}
+
+          {!loading && shown.length === 0 && (
             <div className="empty-state">
               <p>
                 {items.length === 0
@@ -81,11 +88,7 @@ export default function Achievements() {
                           {a.level} level.{a.who ? ` ${a.who}.` : ""}
                         </p>
                         {isOwner && a.added && (
-                          <button
-                            type="button"
-                            className="remove-btn"
-                            onClick={() => window.confirm("Delete this achievement?") && remove(a.id)}
-                          >
+                          <button type="button" className="remove-btn" onClick={() => handleRemove(a.id)}>
                             Delete
                           </button>
                         )}
